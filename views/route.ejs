@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('./head'); %>
+    <title>Route</title>
+    
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC7nw9GkQSirY2H-q4kr5PAFKoS0eRyv_o&callback=initMap&libraries=drawing&v=weekly"
+      defer
+    ></script>
+    <style type="text/css">
+      #map {
+        height: 500px;
+        width: 1000px;
+      }
+    </style>
+    <script>
+
+      //initialisiere die Google Map
+      let map;
+      function initMap() {    
+          map = new google.maps.Map(document.getElementById("map"), {
+              center: { lat: 52.2825433, lng: 8.0250681 },
+              zoom: 17,
+          });
+          
+          /*Quellen: 
+          https://developers.google.com/maps/documentation/javascript/datalayer#load_geojson
+          https://developers.google.com/maps/documentation/javascript/importing_data#maps_earthquake_markers-javascript
+          https://developers.google.com/maps/documentation/javascript/datalayer#declarative_style_rules
+          */
+          
+          //lade Koordinaten
+          map.data.loadGeoJson('/route/test_route');
+
+          //Styling der Map
+          map.data.setStyle({
+            strokeColor: "#ff0000",
+            strokeOpacity: 1,
+            strokeWeight: 3
+          });
+      }
+    </script>
+    
+  </head>
+  <body>
+    <header>
+        <!--Navigationsleiste-->
+        <%- include('./header'); %>
+    </header>
+
+    <h3>Google Maps:</h3>
+    <!--The div element for the map -->
+    <div id="map"></div>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <%- include('./head'); %>
+    <title>Wetter</title>
+</head>
+<body>
+    <header>
+        <!--Navigationsleiste-->
+        <%- include('./header'); %>
+    </header>
+    
+    <main>
+        <div class="container">
+            <h1>Wetter</h1>
+            <p>Aktuelle Temperatur:</p>
+            <p> <%= temperatur %> </p>
+            <p> <%= city %> </p>
+            <p> <a href="/weather/api">Wetter Api</a> </p>
+        </div>
+    </main>
+</body>
+</html>

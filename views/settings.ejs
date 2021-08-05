@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <%- include('./head'); %>
+    <title>Einstellungen</title>
+</head>
+<body>
+    <header>
+        <!--Navigationsleiste-->
+        <%- include('./header'); %>
+    </header>
+    
+    <main>
+        <div class="container">
+            <h1>Einstellungen</h1>
+            <form action="/settings/save" method="post">
+                <label for="city">Stadt:</label><br>
+                <input type="text" name="city" value="<%= result %>">
+
+                <input type="submit" value="Send">
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>
