@@ -1,9 +1,6 @@
 //Quelle: https://stackabuse.com/making-http-requests-in-node-js-with-node-fetch
 
 const fetch = require('node-fetch');
-
-const api_key = "f4bbb65b843c759430db10f6da7ad568";
-
 // Beispiel URL "https://api.openweathermap.org/data/2.5/weather?q=osnabrueck&units=metric&appid=f4bbb65b843c759430db10f6da7ad568"
 
 
@@ -41,12 +38,8 @@ async function fetchWeather(res, dbCity){
     await fetch(URL)
         .then(res => res.json())
         .then(json =>{
-            console.log(json);
-            //temperature=json.main.temp;
             jsonData=json;
-            //console.log("temperature=" + temperature);
         })
-    //return temperature;
     return jsonData;
 }
 

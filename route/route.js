@@ -4,8 +4,10 @@
     Idee: Für jede gelaufene Route gibt es eine eindeutige ID!!
 */
 
-function loadRoute(res){
-    res.render('route');
+function loadRoute(res, bufferArray){
+    res.render('route', {
+        gpsData: bufferArray
+    });
 }
 
 module.exports.loadRoute = loadRoute;

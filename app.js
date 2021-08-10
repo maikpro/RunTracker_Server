@@ -30,6 +30,7 @@ const settings = require("./settings/settings");
 
 myMongoDB.connectToMongoDB(); //async
 
+
 app.get('/', (req, res) => {
     res.render('home');
 })
@@ -40,13 +41,15 @@ app.listen(port, () => {
 });
 
 
-//MQTT Testing
-myMqtt.sendMQTTMessage();
-myMqtt.getMQTTMessage();
+//MQTT
+myMqtt.initBufferArray(myMongoDB);
+myMqtt.connectToMQTTBroker();
+myMqtt.getMQTTMessage(myMongoDB);
 
-app.get('/mqtt', (req, res) => {
-    const message = myMqtt.getBuffer();
-    res.send(message.toString());
+//später Daten aus DB laden!
+app.get('/mqtt/gps', (req, res) => {
+    var message = myMqtt.getBufferArray();
+    res.send(message);
 });
 
 //Weather Testing
@@ -54,7 +57,6 @@ app.get('/weather', (req, res) => {
     //hole aktuellen Citynamen aus der DB und dann lade das aktuelle Wetter aus der OpenWeatherMap Api
     var cityPromise = myMongoDB.loadSettingsData();
     cityPromise.then((result) =>{
-        console.log("cityPromise: " + result.city);
         //jsonPromise => Api-Daten aus OpenWeatherMap!
         var jsonPromise = weather.fetchWeather(res, result.city);
         //Promise Problem:
@@ -74,7 +76,6 @@ app.get('/weather/api', (req, res) => {
     //hole aktuellen Citynamen aus der DB und dann lade das aktuelle Wetter aus der OpenWeatherMap Api
     var cityPromise = myMongoDB.loadSettingsData();
     cityPromise.then((result) =>{
-        console.log("cityPromise: " + result.city);
         //jsonPromise => Api-Daten aus OpenWeatherMap!
         var jsonPromise = weather.fetchWeather(res, result.city);
         //Promise Problem:
@@ -96,15 +97,20 @@ app.post('/settings/save', (req, res) => {
     settings.saveSettings(req, res, myMongoDB);
 });
 
+app.post('/settings/deleteGPSData', (req, res) => {
+    settings.deleteGPSData(res, myMongoDB);
+});
+
 
 //Route/Run
 app.get('/route', (req, res) => {
-    route.loadRoute(res);
+    var bufferArray = myMqtt.getBufferArray();
+    route.loadRoute(res, bufferArray);
 });
 
 
 //Coordinates auslesen aus der Datei
-app.get('/route/test_route', (req, res) => {
+app.get('/mqtt/gps/geojson/test', (req, res) => {
     const geoJSON = {
         "type": "FeatureCollection",
         "features": [
@@ -115,7 +121,7 @@ app.get('/route/test_route', (req, res) => {
               "type": "MultiLineString",
               "coordinates": [
                 [
-                  //[LATITUDE, LONGITUDE]
+                  //[LONGITUDE, LATITUDE]
                   [8.0250681, 52.2825433],
                   [8.02525, 52.28251],
                   [8.02545, 52.28249],
@@ -135,3 +141,70 @@ app.get('/route/test_route', (req, res) => {
     res.send(geoJSON);
 });
 
+
+
+function parseCoordsFromRound(bufferArray, ausgewaehlteRunde){
+    //NUR EINE RUNDE WIRD JEWEILS VOM NUTZER AUSGEWÄHLT ZUM ANZEIGEN DER ROUTE AUF MAPS!!!
+    //var ausgewaehlteRunde = 0;
+    
+    
+    if( ausgewaehlteRunde < bufferArray.length ){
+        var coordsArray = []; //alle Koordinaten aus der jeweiligen Runde!
+        for(var dataset = 0; dataset < bufferArray[ausgewaehlteRunde].length; dataset++){
+            var datapoint = bufferArray[ausgewaehlteRunde][dataset]; //durchlaufe einen Datensatz => { gpsLat, gpsLng, date, time }
+            //hol nur die Coords
+            
+            //var coords = datapoint.gpsLat + ", " + datapoint.gpsLng;
+            var coords = [];
+            coords.push( datapoint.gpsLng );
+            coords.push( datapoint.gpsLat );
+            
+            coordsArray.push( coords ); 
+        }
+        
+        return coordsArray;
+    } else{
+        return -99;
+    }
+}
+
+function coordsToGeoJSON(coordsArray){
+    const geoJSON = {
+        "type": "FeatureCollection",
+        "features": 
+        [
+            {
+                "type": "Feature",
+                "properties": {},
+                "geometry": 
+                {
+                    "type": "MultiLineString",
+                    "coordinates": 
+                    [
+                        coordsArray
+                    ]
+                }
+            }
+        ]
+    }
+
+    return geoJSON;
+}
+
+app.get('/mqtt/gps/geojson/:round', (req, res) => {
+    var round = req.params.round; //aus der URL auslesen!
+    
+    var bufferArray = myMqtt.getBufferArray();
+
+    var coordsArray = parseCoordsFromRound(bufferArray, round);
+
+    if(coordsArray == -99){
+        res.send("Diese Runde gibt es nicht!")
+    } else{
+        const geoJson = coordsToGeoJSON(coordsArray);
+        res.send(
+            //52.274255,8.012111
+            JSON.parse( JSON.stringify( geoJson ) )
+        );
+    }
+});

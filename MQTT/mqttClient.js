@@ -1,38 +1,58 @@
 //MQTT Broker Module
-const mqtt = require('mqtt')
+const mqtt = require('mqtt');
 //const mqttClient = mqtt.connect('mqtt://broker.hivemq.com')
-const mqttClient = mqtt.connect('mqtt://broker.mqttdashboard.com')
+const mqttClient = mqtt.connect('mqtt://broker.mqttdashboard.com');
 
-const topic = "maiksMqttTest"
-var buffer="";
+//MQTT Topic
+const gpsTopic = "m5stackGps";
 
-var counter = 0;
-function testingMessages(){
-    setInterval(() => {
-        mqttClient.publish(topic, "counter: " + counter.toString());
-        counter++;
-    }, 5000);
+var buffer=[];
+
+
+var bufferArray = [];
+
+//lade Daten aus der Datenbank in den arrayBuffer!
+module.exports.initBufferArray = (myMongoDB) => {
+    var promise = myMongoDB.loadGPSData();
+    promise.then( (data) => {
+        bufferArray = data.bufferArray;
+    });
 }
 
 //MQTT Testing
-module.exports.sendMQTTMessage = () => {
+module.exports.connectToMQTTBroker = () => {
     mqttClient.on('connect', () =>{
-        mqttClient.subscribe(topic, (err) =>{
+        mqttClient.subscribe(gpsTopic, (err) =>{
             if(!err){
-                //mqttClient.publish(topic, "Hello Mqtt! HEHE");
-                //testingMessages();
+                console.log("connected to MQTT BROKER");
             }
         });
     });
 }
 
-module.exports.getMQTTMessage = () => {
+module.exports.getMQTTMessage = (myMongoDB) => {
     mqttClient.on('message', (topic, message) => {
-        console.log(message.toString());
-        buffer += message;
+        var jsonFromM5 = JSON.parse(message.toString());
+        
+        if( jsonFromM5.status === 999 ){
+            //Status wird NICHT abgespeichert!
+            console.log("Nutzer hat die Runde beendet.");
+            bufferArray.push(buffer);
+
+            //speicher das bufferArray in die MongoDB!
+            var gpsData = { bufferArray };
+            myMongoDB.saveGPSData(gpsData);
+
+            //Hier muss der buffer resettet werden mit den Daten!
+            //Für die nächste Runde sollen vorherige Daten nicht enthalten sein!
+            //https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+            buffer = [];
+        } else{
+            buffer.push(jsonFromM5);
+        }
     });
 }
 
-module.exports.getBuffer = () => {
-    return buffer;
+module.exports.getBufferArray = () => {
+    return bufferArray;
 }

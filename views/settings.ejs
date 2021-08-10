@@ -14,13 +14,32 @@
         <div class="container">
             <h1>Einstellungen</h1>
             <form action="/settings/save" method="post">
-                <label for="city">Stadt:</label><br>
-                <input type="text" name="city" value="<%= result %>">
+                <div class="card border-success mb-3" >
+                    <div class="card-body text-success">  
+                    <!-- Stadt Settings -->
+                        <div class="form-group">
+                            <label for="city">Stadt:</label><br>
+                            <div class="form-inline">
+                                <input class="form-control" type="text" name="city" value="<%= result %>">
+                                <input type="submit" class="ml-2 btn btn-success" value="Ändern">
+                            </div>
+                        </div>
+                    </div>  
+                </div>
+            </form>
 
-                <input type="submit" value="Send">
+            <form action="/settings/deleteGPSData" method="post">
+                <!-- Datenbank GPS-Daten löschen -->
+                <div class="card border-danger mb-3" >
+                    <div class="card-body text-danger">
+                      <h5 class="card-title">GPS-Daten aus der MongoDB löschen</h5>
+                      <p class="card-text">Damit werden die GPS-Daten unwiderruflich gelöscht!</p>
+                      <input type="submit" class="ml-2 btn btn-danger" value="Löschen">
+                    </div>
+                </div>
             </form>
         </div>
     </main>
-
+    <%- include('./footer'); %>
 </body>
 </html>

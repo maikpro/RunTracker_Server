@@ -3,45 +3,6 @@
   <head>
     <%- include('./head'); %>
     <title>Route</title>
-    
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC7nw9GkQSirY2H-q4kr5PAFKoS0eRyv_o&callback=initMap&libraries=drawing&v=weekly"
-      defer
-    ></script>
-    <style type="text/css">
-      #map {
-        height: 500px;
-        width: 1000px;
-      }
-    </style>
-    <script>
-
-      //initialisiere die Google Map
-      let map;
-      function initMap() {    
-          map = new google.maps.Map(document.getElementById("map"), {
-              center: { lat: 52.2825433, lng: 8.0250681 },
-              zoom: 17,
-          });
-          
-          /*Quellen: 
-          https://developers.google.com/maps/documentation/javascript/datalayer#load_geojson
-          https://developers.google.com/maps/documentation/javascript/importing_data#maps_earthquake_markers-javascript
-          https://developers.google.com/maps/documentation/javascript/datalayer#declarative_style_rules
-          */
-          
-          //lade Koordinaten
-          map.data.loadGeoJson('/route/test_route');
-
-          //Styling der Map
-          map.data.setStyle({
-            strokeColor: "#ff0000",
-            strokeOpacity: 1,
-            strokeWeight: 3
-          });
-      }
-    </script>
-    
   </head>
   <body>
     <header>
@@ -50,7 +11,110 @@
     </header>
 
     <h3>Google Maps:</h3>
+    
+    <% if( gpsData.length > 0 ){ %>
+      <!--Runde auswählen-->
+      <label for="auswahl">Eine Laufrunde auswählen:</label>
+      <select name="runde" id="auswahlRunde">
+        <!-- Rendern der Auswahl -->
+        <%
+          for ( var i = 0; i < gpsData.length; i++ ){
+              %><option value="<%= i %>"%>><%= "Runde: " + i + " | " + gpsData[ i ][gpsData[i].length-1].date + " | " + gpsData[ i ][gpsData[i].length-1].time%></option><%
+          }
+        %>
+      </select>
+      <!---->
+    <% } else{ %>
+      <p class="text-danger">Momentan stehen keine GPS-Daten zum Tracken bereit.</>
+    <% } %>
+
+    
+
+    
+    
+    
     <!--The div element for the map -->
     <div id="map"></div>
+
+    <style type="text/css">
+      #map {
+        width: 100%;
+        height: 500px;
+      }
+    </style>
+
+    <!--Load Google Maps with API-->
+    <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBxRNL_l2B7Ldbk4BrH8JwMA3qyaOA1VUs&callback=refreshGoogleMap&libraries=drawing&v=weekly"
+    defer
+    ></script>
+
+    <!-- EVENT -->
+    <script>
+      var select = document.getElementById('auswahlRunde');
+      //Beim Laden der Seite wähle die erste Option aus und lade die Map!
+      select.value = 0;
+
+      function refreshGoogleMap(){
+        var url = "/mqtt/gps/geojson/" + select.value;
+        ///route/test_route
+        //var url = "/route/test_route";
+        fetch(url)
+          .then(res => res.json())
+          .then(
+            (data) => {
+                var coordArray = data.features[0].geometry.coordinates[0]
+                var startCoords = coordArray[0];
+                var zielCoords = coordArray[coordArray.length-1];
+
+                //map.setZoom(map.getZoom());
+                let map = new google.maps.Map(document.getElementById("map"), {
+                    //center: { lat: 52.2825433, lng: 8.0250681 },
+                    center: { lat: zielCoords[1], lng: zielCoords[0] },
+                    zoom: 17,
+                });
+
+                //lade Koordinaten
+                map.data.loadGeoJson(url)
+
+                /*Quellen: 
+                https://developers.google.com/maps/documentation/javascript/datalayer#load_geojson
+                https://developers.google.com/maps/documentation/javascript/importing_data#maps_earthquake_markers-javascript
+                https://developers.google.com/maps/documentation/javascript/datalayer#declarative_style_rules
+                */
+                
+                //Styling der Map
+                map.data.setStyle({
+                  strokeColor: "#ff0000",
+                  strokeOpacity: 1,
+                  strokeWeight: 3
+                });
+
+                /*Google Markers*/
+                new google.maps.Marker({
+                  position: { lat: startCoords[1], lng: startCoords[0] },
+                  map,
+                  label: "S",
+                  title: "Dein Startpunkt"
+                });
+
+                new google.maps.Marker({
+                  position: { lat: zielCoords[1], lng: zielCoords[0] },
+                  map,
+                  label: "Z",
+                  title: "Dein erreichtes Ziel"
+                });
+            }  
+          );
+      }
+
+      /*Beim Auswählen einer Runde triggert dieses Event!*/
+      select.addEventListener ("change", function () {
+        refreshGoogleMap();
+      });
+    </script>
+
+    <!--Footer Scripts-->
+    <%- include('./footer'); %>
   </body>
 </html>

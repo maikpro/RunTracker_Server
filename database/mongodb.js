@@ -28,7 +28,41 @@ module.exports.connectToMongoDB = async function(){
     }
 }
 
+//Test: db.gpsData.find()
+module.exports.saveGPSData = (gpsData) =>{
+    client.connect(() => {
+        const db = client.db(dbName);
+        
+        //GpsDaten sollen NICHT ersetzt werden 
+        const update = { $set: { bufferArray: gpsData.bufferArray } }
+        const options = { upsert: true };
 
+        db.collection('gpsData')
+            .updateOne( {_id: 200}, update, options )
+            //.insertOne()
+            .then( result => {
+                id = result.insertedId;
+                console.log(
+                    `A document was inserted with the _id: ${result.insertedId}`,
+                );
+            })
+    });
+}
+
+module.exports.loadGPSData = () => {
+    return new Promise( (res) => {
+        client.connect(() => {
+            const db = client.db(dbName);
+            db.collection('gpsData')
+                .findOne({}, (err, result) =>{
+                    if(err) throw err;
+                    res(result);
+                });
+        });
+    });
+}
+
+//Test: db.settings.find()
 module.exports.saveSettings= (query) =>{
     client.connect(() => {
         const db = client.db(dbName);
@@ -61,12 +95,17 @@ module.exports.loadSettingsData = () => {
             db.collection('settings')
                 .findOne({}, (err, result) =>{
                     if(err) throw err;
-                    console.log("loadSettingsData:", result);
-                    //return result;
                     res(result);
                 });
         });
     });
+}
 
-    
+//gpsData haben ID: 200
+module.exports.deleteData = (id, collectionName) => {
+    client.connect(() => {
+        const db = client.db(dbName);
+        db.collection(collectionName)
+            .deleteOne({ _id: id })
+    });
 }
