@@ -1,3 +1,5 @@
+/*https://localtunnel.github.io/www/ => Localtunnel allows you to easily share a web service on your local development machine without messing with DNS and firewall settings.*/
+
 const express = require('express')
 const app = express()
 const port = 3000
@@ -58,7 +60,7 @@ app.get('/weather', (req, res) => {
     var cityPromise = myMongoDB.loadSettingsData();
     cityPromise.then((result) =>{
         //jsonPromise => Api-Daten aus OpenWeatherMap!
-        var jsonPromise = weather.fetchWeather(res, result.city);
+        var jsonPromise = weather.fetchWeatherHeute(res, result.city);
         //Promise Problem:
         //https://dev.to/ramonak/javascript-how-to-access-the-return-value-of-a-promise-object-1bck
         jsonPromise
@@ -72,12 +74,12 @@ app.get('/weather', (req, res) => {
 });
 
 //Weather Api
-app.get('/weather/api', (req, res) => {
+app.get('/weather/api/heute', (req, res) => {
     //hole aktuellen Citynamen aus der DB und dann lade das aktuelle Wetter aus der OpenWeatherMap Api
     var cityPromise = myMongoDB.loadSettingsData();
     cityPromise.then((result) =>{
         //jsonPromise => Api-Daten aus OpenWeatherMap!
-        var jsonPromise = weather.fetchWeather(res, result.city);
+        var jsonPromise = weather.fetchWeatherHeute(res, result.city);
         //Promise Problem:
         //https://dev.to/ramonak/javascript-how-to-access-the-return-value-of-a-promise-object-1bck
         jsonPromise
@@ -86,6 +88,86 @@ app.get('/weather/api', (req, res) => {
             });
     });
 });
+
+/*parst Date und Time aus einem String und generiert ein Array wobei arr[date, time]*/
+function parseDateTime(str){
+    str = str.split(" ");
+    var date=str[0];
+    var time=str[1];
+
+    var dateTimeArr = [date, time];
+    return dateTimeArr;
+}
+
+/*Ändert das Date-Format von yyyy-mm-dd => dd.mm.yyyy*/
+function changeDateFormat(date){
+    date = date.split("-");
+    var year = date[0];
+    var month = date[1];
+    var day = date[2];
+    
+    var newDate = day + "." + month + "." + year;
+    return newDate;
+}
+
+app.get('/weather/api/woche', (req, res) => {
+    //hole aktuellen Citynamen aus der DB und dann lade das aktuelle Wetter aus der OpenWeatherMap Api
+    var cityPromise = myMongoDB.loadSettingsData();
+    cityPromise.then((result) =>{
+        //jsonPromise => Api-Daten aus OpenWeatherMap!
+        var jsonPromise = weather.fetchWeatherWoche(res, result.city);
+        //Promise Problem:
+        //https://dev.to/ramonak/javascript-how-to-access-the-return-value-of-a-promise-object-1bck
+        jsonPromise
+            .then((jsonData) =>{
+                //console.log(jsonData.city.name); //=> Stadt
+                //=> Morgen
+                //console.log(jsonData.list[8].main.temp) //Temperatur
+                //console.log(jsonData.list[8].dt_txt) //Datum und Zeit
+                //console.log(jsonData.list[8].weather[0].main) //Beschreibung des Wetters (Clouds, Rain, ...)
+                //
+                var wetterWocheJSON = [];
+                //24 Std => 8 Wetterdaten [00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00]
+                for(var i = 8; i < jsonData.list.length; i=i+8){
+                    
+                    var strDateTime = jsonData.list[i].dt_txt.toString();
+                    var dateTimeArr = parseDateTime(strDateTime);
+                    dateTimeArr[0] = changeDateFormat(dateTimeArr[0]);
+
+                    const JSONObject = { 
+                        "temp": jsonData.list[i].main.temp.toString(),
+                        "date": dateTimeArr[0],
+                        "time": dateTimeArr[1],
+                        "description": jsonData.list[i].weather[0].main.toString()
+                    };
+                    
+                    wetterWocheJSON.push( JSONObject );
+                    
+                    //wetterWocheJSON.push( '{ "temp": "' + jsonData.list[i].main.temp + '", "dateTime": "' + jsonData.list[i].dt_txt + '", "description": "' +  jsonData.list[i].weather[0].main + '" }');
+                    
+                    if( i + 8 == 40 ){ //maximal werden 40 Wetterdaten geliefert (alle 3 Std für 5 Tage)
+                        i--;
+                    }
+                }
+
+                /*for(var i = 8; i < jsonData.list.length; i=i+8){
+                    console.log(jsonData.list[i].main.temp) //Temperatur
+                    console.log(jsonData.list[i].dt_txt) //Datum und Zeit
+                    console.log(jsonData.list[i].weather[0].main) //Beschreibung des Wetters (Clouds, Rain, ...)
+                    console.log("================================================================================");
+                    console.log("================================================================================");
+                    if( i + 8 == 40 ){ //maximal werden 40 Wetterdaten geliefert (alle 3 Std für 5 Tage)
+                        i--;
+                    }
+                }*/
+                
+                res.send( JSON.parse( JSON.stringify(wetterWocheJSON)  ) );
+            });
+    });
+});
+
+
+
 
 //Settings
 app.get('/settings', (req, res) => {
@@ -108,7 +190,7 @@ app.get('/route', (req, res) => {
     route.loadRoute(res, bufferArray);
 });
 
-
+//Beispiel GeoJSON
 //Coordinates auslesen aus der Datei
 app.get('/mqtt/gps/geojson/test', (req, res) => {
     const geoJSON = {

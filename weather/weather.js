@@ -29,7 +29,7 @@ return str
     );
 }
 
-async function fetchWeather(res, dbCity){
+async function fetchWeatherHeute(res, dbCity){
     var temperature=0.00;
     var jsonData;
 
@@ -43,4 +43,20 @@ async function fetchWeather(res, dbCity){
     return jsonData;
 }
 
-module.exports.fetchWeather = fetchWeather;
+async function fetchWeatherWoche(res, dbCity){
+    var temperature=0.00;
+    var jsonData;
+
+    //https://api.openweathermap.org/data/2.5/forecast?q=M%C3%BCnchen&units=metric&appid=f4bbb65b843c759430db10f6da7ad568
+    var URL = "https://api.openweathermap.org/data/2.5/forecast?q=" + replaceUmlaute(dbCity) + "&units=metric&cnt=41&appid=f4bbb65b843c759430db10f6da7ad568";
+
+    await fetch(URL)
+        .then(res => res.json())
+        .then(json =>{
+            jsonData=json;
+        })
+    return jsonData;
+}
+
+module.exports.fetchWeatherHeute = fetchWeatherHeute;
+module.exports.fetchWeatherWoche = fetchWeatherWoche;
