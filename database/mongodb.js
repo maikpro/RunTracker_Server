@@ -9,7 +9,7 @@ const client = new MongoClient(uri);
 // Database Name
 const dbName = 'runtracker';
 
-
+const myMqtt = require("../routes/mqttClient");
 
 
 async function connectToMongoDB(){
@@ -51,13 +51,13 @@ function saveGPSData(gpsData){
 
 function loadGPSData(){
     return new Promise( (res) => {
-        client.connect(() => {
+        client.connect( (err) => {
+            if(err) throw err;
             const db = client.db(dbName);
-            db.collection('gpsData')
-                .findOne({}, (err, result) =>{
-                    if(err) throw err;
-                    res(result);
-                });
+            db.collection('gpsData').findOne({}, (err, result) =>{
+                if(err) throw err;
+                res(result);
+            });
         });
     });
 }
@@ -102,11 +102,14 @@ function loadSettingsData(){
 
 //gpsData haben ID: 200
 function deleteData(id, collectionName){
+    console.log("Lösche GPS Daten...");
     client.connect(() => {
         const db = client.db(dbName);
         db.collection(collectionName)
             .deleteOne({ _id: id })
     });
+
+    myMqtt.clearBufferArray();
 }
 
 module.exports.connectToMongoDB = connectToMongoDB;

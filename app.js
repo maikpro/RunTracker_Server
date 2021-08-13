@@ -24,12 +24,14 @@ app.set('view engine', 'ejs');
 const homeRoute = require("./routes/home");
 const weatherRoute = require("./routes/weather");
 const trackingRoute = require("./routes/tracking");
+const timeRoute = require("./routes/time");
 const mqttRoute = require("./routes/mqttClient");
 const settingsRoute = require("./routes/settings");
 
 app.use('/', homeRoute);
 app.use('/weather', weatherRoute);
 app.use('/tracking', trackingRoute);
+app.use('/time', timeRoute);
 app.use('/mqtt', mqttRoute);
 app.use('/settings', settingsRoute);
 

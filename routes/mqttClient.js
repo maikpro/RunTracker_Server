@@ -18,7 +18,11 @@ var bufferArray = [];
 function initBufferArray(){
     var promise = myMongoDB.loadGPSData();
     promise.then( (data) => {
-        bufferArray = data.bufferArray;
+        if(data == null){
+            console.log("bufferArray ist leer... Keine GPS-Daten vorhanden!");
+        } else{
+            bufferArray = data.bufferArray;
+        }
     });
 }
 
@@ -58,6 +62,12 @@ function getMQTTMessage(){
 
 function getBufferArray(){
     return bufferArray;
+}
+
+function clearBufferArray(){
+    while(bufferArray.length > 0) {
+        bufferArray.pop();
+    }
 }
 
 //später Daten aus DB laden!
@@ -167,3 +177,4 @@ module.exports.initBufferArray = initBufferArray;
 module.exports.connectToMQTTBroker = connectToMQTTBroker;
 module.exports.getMQTTMessage = getMQTTMessage;
 module.exports.getBufferArray = getBufferArray;
+module.exports.clearBufferArray = clearBufferArray;
