@@ -44,6 +44,7 @@ function getMQTTMessage(){
         if( jsonFromM5.status === 999 ){
             //Status wird NICHT abgespeichert!
             console.log("Nutzer hat die Runde beendet.");
+            buffer.push(jsonFromM5);
             bufferArray.push(buffer);
 
             //speicher das bufferArray in die MongoDB!

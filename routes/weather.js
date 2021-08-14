@@ -61,22 +61,38 @@ async function fetchWeatherWoche(res, dbCity){
     return jsonData;
 }
 
+function getDaysOfWeek(){
+    const options = { weekday: 'long'};
+    var daysOfWeek=[];
+ 
+    for( var i=0; i<5; i++){
+        var date = new Date( Date.now() );
+        date.setDate(date.getDate()+i);
+        var day = date.toLocaleDateString('de-DE', options);
+        daysOfWeek.push(day);
+    }  
+    return daysOfWeek;
+}
+
 //Routing Weather
 router.get('/', (req, res) => {
     //hole aktuellen Citynamen aus der DB und dann lade das aktuelle Wetter aus der OpenWeatherMap Api
     var cityPromise = myMongoDB.loadSettingsData();
     cityPromise.then((result) =>{
-        //jsonPromise => Api-Daten aus OpenWeatherMap!
-        var jsonPromise = fetchWeatherHeute(res, result.city);
         //Promise Problem:
         //https://dev.to/ramonak/javascript-how-to-access-the-return-value-of-a-promise-object-1bck
-        jsonPromise
-            .then((jsonData) =>{
+        //Api-Daten aus OpenWeatherMap!
+        fetchWeatherHeute(res, result.city).then((heuteData) =>{
+            fetchWeatherWoche(res, result.city).then((wocheData) =>{
+                var wetterWocheJSON = getWetterWocheJSON(wocheData);
                 res.render('weather', { 
-                    temperatur: jsonData.main.temp,
-                    city: result.city 
+                    temperaturHeute: heuteData,
+                    wochentage: getDaysOfWeek(),
+                    city: result.city,
+                    wocheTemperatur: wetterWocheJSON
                 });
             });
+        });
     });
 });
 
@@ -117,59 +133,40 @@ function changeDateFormat(date){
     return newDate;
 }
 
+function getWetterWocheJSON(jsonData){
+    var wetterWocheJSON = [];
+    //24 Std => 8 Wetterdaten [00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00]
+    for(var i = 8; i < jsonData.list.length; i=i+8){
+        var strDateTime = jsonData.list[i].dt_txt.toString();
+        var dateTimeArr = parseDateTime(strDateTime);
+        dateTimeArr[0] = changeDateFormat(dateTimeArr[0]);
+
+        const JSONObject = { 
+            "temp": jsonData.list[i].main.temp.toString(),
+            "date": dateTimeArr[0],
+            "time": dateTimeArr[1],
+            "description": jsonData.list[i].weather[0].main.toString(),
+            "weekday": getDaysOfWeek()[i-7*(i/8)] //weil es mit morgen anfängt!
+        };
+        
+        wetterWocheJSON.push( JSONObject );
+        if( i + 8 == 40 ){ //maximal werden 40 Wetterdaten geliefert (alle 3 Std für 5 Tage)
+            i--;
+        }
+    }
+    return wetterWocheJSON;
+}
+
 router.get('/api/woche', (req, res) => {
     //hole aktuellen Citynamen aus der DB und dann lade das aktuelle Wetter aus der OpenWeatherMap Api
     var cityPromise = myMongoDB.loadSettingsData();
     cityPromise.then((result) =>{
-        //jsonPromise => Api-Daten aus OpenWeatherMap!
-        var jsonPromise = fetchWeatherWoche(res, result.city);
         //Promise Problem:
         //https://dev.to/ramonak/javascript-how-to-access-the-return-value-of-a-promise-object-1bck
-        jsonPromise
-            .then((jsonData) =>{
-                //console.log(jsonData.city.name); //=> Stadt
-                //=> Morgen
-                //console.log(jsonData.list[8].main.temp) //Temperatur
-                //console.log(jsonData.list[8].dt_txt) //Datum und Zeit
-                //console.log(jsonData.list[8].weather[0].main) //Beschreibung des Wetters (Clouds, Rain, ...)
-                //
-                var wetterWocheJSON = [];
-                //24 Std => 8 Wetterdaten [00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00]
-                for(var i = 8; i < jsonData.list.length; i=i+8){
-                    
-                    var strDateTime = jsonData.list[i].dt_txt.toString();
-                    var dateTimeArr = parseDateTime(strDateTime);
-                    dateTimeArr[0] = changeDateFormat(dateTimeArr[0]);
-
-                    const JSONObject = { 
-                        "temp": jsonData.list[i].main.temp.toString(),
-                        "date": dateTimeArr[0],
-                        "time": dateTimeArr[1],
-                        "description": jsonData.list[i].weather[0].main.toString()
-                    };
-                    
-                    wetterWocheJSON.push( JSONObject );
-                    
-                    //wetterWocheJSON.push( '{ "temp": "' + jsonData.list[i].main.temp + '", "dateTime": "' + jsonData.list[i].dt_txt + '", "description": "' +  jsonData.list[i].weather[0].main + '" }');
-                    
-                    if( i + 8 == 40 ){ //maximal werden 40 Wetterdaten geliefert (alle 3 Std für 5 Tage)
-                        i--;
-                    }
-                }
-
-                /*for(var i = 8; i < jsonData.list.length; i=i+8){
-                    console.log(jsonData.list[i].main.temp) //Temperatur
-                    console.log(jsonData.list[i].dt_txt) //Datum und Zeit
-                    console.log(jsonData.list[i].weather[0].main) //Beschreibung des Wetters (Clouds, Rain, ...)
-                    console.log("================================================================================");
-                    console.log("================================================================================");
-                    if( i + 8 == 40 ){ //maximal werden 40 Wetterdaten geliefert (alle 3 Std für 5 Tage)
-                        i--;
-                    }
-                }*/
-                
-                res.send( JSON.parse( JSON.stringify(wetterWocheJSON)  ) );
-            });
+        fetchWeatherWoche(res, result.city).then((jsonData) =>{
+            var wetterWocheJSON = getWetterWocheJSON(jsonData);    
+            res.send( JSON.parse( JSON.stringify(wetterWocheJSON)  ) );
+        });
     });
 });
 

@@ -19,7 +19,7 @@
           <!-- Rendern der Auswahl -->
           <%
             for ( var i = 0; i < gpsData.length; i++ ){
-                %><option value="<%= i %>"%>><%= "Runde: " + i + " | " + gpsData[ i ][gpsData[i].length-1].date + " | " + gpsData[ i ][gpsData[i].length-1].time%></option><%
+                %><option value="<%= i %>"%>><%= "Runde: " + (i+1) + " | " + gpsData[ i ][gpsData[i].length-1].date + " | " + gpsData[ i ][gpsData[i].length-1].time%></option><%
             }
           %>
         </select>
@@ -41,6 +41,7 @@
               <th scope="col">Datum</th>
               <th scope="col">Start</th>
               <th scope="col">Ende</th>
+              <th scope="col">Distanz</th>
               <th scope="col">Dauer</th>
             </tr>
           </thead>
@@ -52,10 +53,12 @@
                 <% var startTime = gpsData[i][0].time  %>
                 <% var endTime = gpsData[i][gpsData[i].length-1].time %>
                 <% var spentTime = gpsData[i][gpsData[i].length-1].spentTime %>
+                <% var distance = gpsData[i][gpsData[i].length-1].distance %>
 
                 <td><%= gpsData[i][0].date %></td>
                 <td><%= startTime %></td>
                 <td><%= endTime %></td>
+                <td><%= distance %></td>
                 <td><%= spentTime %></td>
               </tr>    
             <% } %>

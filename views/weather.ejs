@@ -3,6 +3,7 @@
 <head>
     <%- include('./head'); %>
     <title>Wetter</title>
+
 </head>
 <body>
     <header>
@@ -12,10 +13,70 @@
     
     <main>
         <div class="container">
+            <% 
+                var clouds = "https://openweathermap.org/img/wn/03d@2x.png";
+                var rain = "https://openweathermap.org/img/wn/09d@2x.png";
+                var clear = "https://openweathermap.org/img/wn/01d@2x.png";
+                var thunder = "https://openweathermap.org/img/wn/11d@2x.png";
+                var snow = "https://openweathermap.org/img/wn/13d@2x.png";
+            %>
+
+            <% function getIcon(description) {%>
+                <% var icon; %>
+                    <% switch( description ){
+                        case "Clouds":
+                            icon = clouds;
+                            break;
+                        case "Rain":
+                            icon = rain;
+                            break;
+                        case "Clear":
+                            icon = clear;
+                            break;
+                        case "Thunderstorm":
+                            icon = thunder;
+                            break;
+                        case "Snow":
+                            icon = snow;
+                            break;
+                        default:
+                            icon = "";
+                            break;
+                    %>
+                    <% } %>
+                    <% return icon; %>
+                <% } %>
             <h1>Wetter</h1>
-            <p>Aktuelle Temperatur:</p>
-            <p> <%= temperatur %> </p>
-            <p> <%= city %> </p>
+            <div class="card" style="width: 16rem;">
+                <div class="card-body">
+                    <h5 class="card-title"> Heute, <%= wochentage[0] %> </h5>
+                    <img src=<%= getIcon( temperaturHeute.weather[0].main ) %> />
+                    <p class="card-text"> <%= temperaturHeute.main.temp %>°C </p>
+                    <p class="card-text"> <%= city %> </p>
+                </div>
+            </div>
+
+            <!-- Wetter Woche -->
+            <div class="card-deck mt-5 mb-5">
+                
+                <!--CARD-->
+                <% for( var i = 0; i < wocheTemperatur.length-1; i++ ){ %>
+                
+                    <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"> <%= wocheTemperatur[i].date %>, <%= wochentage[i+1] %>  </h5>
+                        <img src=<%= getIcon(wocheTemperatur[i].description) %> />
+                        <p class="card-text"> <%= wocheTemperatur[i].temp %>°C </p>
+                        <p class="card-text"> <%= city %> </p>
+                    </div>
+                    </div>
+                
+                <% } %>
+                <!--CARD-->
+
+              </div>
+
+            <!--URL zu JSON Data-->
             <p> <a href="/weather/api/heute">Wetter Api Heute</a> </p>
             <p> <a href="/weather/api/woche">Wetter Api Woche</a> </p>
            
